@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const { pool } = require('./db');
+const { runMigrations } = require('./migrate');
 
 const app = express();
 app.use(cors());
@@ -41,6 +42,8 @@ async function start() {
       await new Promise(r => setTimeout(r, 2000));
     }
   }
+  console.log('Running database migrations...');
+  await runMigrations();
   await ensureAdminUser();
   app.listen(PORT, () => console.log(`Backend running on :${PORT}`));
 }
