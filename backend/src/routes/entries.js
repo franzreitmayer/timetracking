@@ -20,15 +20,15 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { entry_date, start_time, end_time, short_text, long_text, kostenstelle, kostentraeger, is_travel, is_billable } = req.body;
+  const { entry_date, start_time, end_time, short_text, long_text, kostenstelle, kostentraeger, is_travel, is_billable, external_ref1, external_ref2 } = req.body;
   if (!entry_date || !start_time || !end_time || !short_text) {
     return res.status(400).json({ error: 'entry_date, start_time, end_time, short_text are required' });
   }
   try {
     const { rows } = await pool.query(
-      `INSERT INTO time_entries (user_id, entry_date, start_time, end_time, short_text, long_text, kostenstelle, kostentraeger, is_travel, is_billable)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [req.user.id, entry_date, start_time, end_time, short_text, long_text || null, kostenstelle || null, kostentraeger || null, is_travel || false, is_billable || false]
+      `INSERT INTO time_entries (user_id, entry_date, start_time, end_time, short_text, long_text, kostenstelle, kostentraeger, is_travel, is_billable, external_ref1, external_ref2)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+      [req.user.id, entry_date, start_time, end_time, short_text, long_text || null, kostenstelle || null, kostentraeger || null, is_travel || false, is_billable || false, external_ref1 || null, external_ref2 || null]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -37,14 +37,15 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { entry_date, start_time, end_time, short_text, long_text, kostenstelle, kostentraeger, is_travel, is_billable } = req.body;
+  const { entry_date, start_time, end_time, short_text, long_text, kostenstelle, kostentraeger, is_travel, is_billable, external_ref1, external_ref2 } = req.body;
   try {
     const { rows } = await pool.query(
       `UPDATE time_entries SET
         entry_date=$1, start_time=$2, end_time=$3, short_text=$4,
-        long_text=$5, kostenstelle=$6, kostentraeger=$7, is_travel=$8, is_billable=$9, updated_at=NOW()
-       WHERE id=$10 AND user_id=$11 RETURNING *`,
-      [entry_date, start_time, end_time, short_text, long_text || null, kostenstelle || null, kostentraeger || null, is_travel || false, is_billable || false, req.params.id, req.user.id]
+        long_text=$5, kostenstelle=$6, kostentraeger=$7, is_travel=$8, is_billable=$9,
+        external_ref1=$10, external_ref2=$11, updated_at=NOW()
+       WHERE id=$12 AND user_id=$13 RETURNING *`,
+      [entry_date, start_time, end_time, short_text, long_text || null, kostenstelle || null, kostentraeger || null, is_travel || false, is_billable || false, external_ref1 || null, external_ref2 || null, req.params.id, req.user.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(rows[0]);

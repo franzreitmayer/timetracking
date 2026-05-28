@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import api, { TimeEntry, MasterDataItem } from '../api/client';
+import api, { TimeEntry, MasterDataItem, ExtRefItem } from '../api/client';
 import CalendarView from '../components/CalendarView';
 import ListView from '../components/ListView';
 import EntryModal from '../components/EntryModal';
@@ -11,19 +11,18 @@ export default function Dashboard() {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [kostenstellen, setKostenstellen] = useState<MasterDataItem[]>([]);
   const [kostentraeger, setKostentraeger] = useState<MasterDataItem[]>([]);
+  const [extRef1Items, setExtRef1Items] = useState<ExtRefItem[]>([]);
+  const [extRef2Items, setExtRef2Items] = useState<ExtRefItem[]>([]);
   const [modal, setModal] = useState<Partial<TimeEntry> | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Date range filter for list view
   const now = new Date();
-  const [dateFrom, setDateFrom] = useState(() => {
-    const d = new Date(now.getFullYear(), now.getMonth(), 1);
-    return d.toISOString().slice(0, 10);
-  });
-  const [dateTo, setDateTo] = useState(() => {
-    const d = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return d.toISOString().slice(0, 10);
-  });
+  const [dateFrom, setDateFrom] = useState(() =>
+    new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('sv')
+  );
+  const [dateTo, setDateTo] = useState(() =>
+    new Date(now.getFullYear(), now.getMonth() + 1, 0).toLocaleDateString('sv')
+  );
 
   const loadEntries = useCallback(async () => {
     const { data } = await api.get<TimeEntry[]>(`/entries?date_from=${dateFrom}&date_to=${dateTo}`);
@@ -35,6 +34,8 @@ export default function Dashboard() {
   useEffect(() => {
     api.get<MasterDataItem[]>('/masterdata/kostenstelle').then(r => setKostenstellen(r.data));
     api.get<MasterDataItem[]>('/masterdata/kostentraeger').then(r => setKostentraeger(r.data));
+    api.get<ExtRefItem[]>('/extrefs/ref1').then(r => setExtRef1Items(r.data));
+    api.get<ExtRefItem[]>('/extrefs/ref2').then(r => setExtRef2Items(r.data));
   }, []);
 
   function openNew(partial: Partial<TimeEntry> = {}) {
@@ -63,7 +64,6 @@ export default function Dashboard() {
         <button className="btn-primary" onClick={() => openNew()}>+ Neuer Eintrag</button>
       </div>
 
-      {/* Date range filter */}
       <div className="card" style={{ padding: '14px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
         <label style={{ fontWeight: 600, fontSize: 13 }}>Zeitraum:</label>
         <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ width: 160 }} />
@@ -72,12 +72,8 @@ export default function Dashboard() {
       </div>
 
       <div className="tabs">
-        <button className={`tab${tab === 'calendar' ? ' active' : ''}`} onClick={() => setTab('calendar')}>
-          Kalenderansicht
-        </button>
-        <button className={`tab${tab === 'list' ? ' active' : ''}`} onClick={() => setTab('list')}>
-          Listenansicht
-        </button>
+        <button className={`tab${tab === 'calendar' ? ' active' : ''}`} onClick={() => setTab('calendar')}>Kalenderansicht</button>
+        <button className={`tab${tab === 'list' ? ' active' : ''}`} onClick={() => setTab('list')}>Listenansicht</button>
       </div>
 
       {tab === 'calendar' ? (
@@ -88,10 +84,7 @@ export default function Dashboard() {
           onEntryUpdated={e => setEntries(prev => prev.map(x => x.id === e.id ? e : x))}
         />
       ) : (
-        <ListView
-          entries={entries}
-          onEdit={e => { setModal(e); setModalOpen(true); }}
-        />
+        <ListView entries={entries} onEdit={e => { setModal(e); setModalOpen(true); }} />
       )}
 
       {modalOpen && (
@@ -102,6 +95,8 @@ export default function Dashboard() {
           onDeleted={handleDeleted}
           kostenstellen={kostenstellen}
           kostentraeger={kostentraeger}
+          extRef1Items={extRef1Items}
+          extRef2Items={extRef2Items}
         />
       )}
     </div>

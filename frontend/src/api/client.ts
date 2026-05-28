@@ -43,6 +43,8 @@ export type TimeEntry = {
   kostentraeger: string | null;
   is_travel: boolean;
   is_billable: boolean;
+  external_ref1: string | null;
+  external_ref2: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -61,6 +63,14 @@ export function attachmentUrl(att: Attachment, download = false): string {
   const token = localStorage.getItem('token') || '';
   return `/api/attachments/file/${att.id}?token=${encodeURIComponent(token)}${download ? '&download=1' : ''}`;
 }
+
+export type ExtRefItem = {
+  id: string;
+  referent: string;
+  beschreibung: string | null;
+  is_active: boolean;
+  created_at: string;
+};
 
 export type MasterDataItem = {
   id: string;

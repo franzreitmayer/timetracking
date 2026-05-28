@@ -13,6 +13,7 @@ app.use('/api/entries',     require('./routes/entries'));
 app.use('/api/masterdata',  require('./routes/masterdata'));
 app.use('/api/admin',       require('./routes/admin'));
 app.use('/api/attachments', require('./routes/attachments'));
+app.use('/api/extrefs',    require('./routes/extrefs'));
 
 app.get('/api/health', (_, res) => res.json({ ok: true }));
 

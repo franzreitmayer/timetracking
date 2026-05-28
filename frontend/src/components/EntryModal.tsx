@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import api, { TimeEntry, MasterDataItem, Attachment, attachmentUrl } from '../api/client';
-import Combobox from './Combobox';
+import api, { TimeEntry, MasterDataItem, ExtRefItem, Attachment, attachmentUrl } from '../api/client';
+import Combobox, { masterDataToOptions, extRefToOptions } from './Combobox';
 
 interface Props {
   entry?: Partial<TimeEntry> | null;
@@ -9,6 +9,8 @@ interface Props {
   onDeleted?: (id: string) => void;
   kostenstellen: MasterDataItem[];
   kostentraeger: MasterDataItem[];
+  extRef1Items: ExtRefItem[];
+  extRef2Items: ExtRefItem[];
 }
 
 const empty = (): Partial<TimeEntry> => ({
@@ -21,6 +23,8 @@ const empty = (): Partial<TimeEntry> => ({
   kostentraeger: '',
   is_travel: false,
   is_billable: false,
+  external_ref1: '',
+  external_ref2: '',
 });
 
 function fmtSize(b: number) {
@@ -42,7 +46,7 @@ function fileIcon(mime: string) {
   return '📎';
 }
 
-export default function EntryModal({ entry, onClose, onSaved, onDeleted, kostenstellen, kostentraeger }: Props) {
+export default function EntryModal({ entry, onClose, onSaved, onDeleted, kostenstellen, kostentraeger, extRef1Items, extRef2Items }: Props) {
   const [form, setForm] = useState<Partial<TimeEntry>>(entry ? { ...entry } : empty());
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -62,6 +66,8 @@ export default function EntryModal({ entry, onClose, onSaved, onDeleted, kostens
         entry_date: entry.entry_date?.slice(0, 10),
         start_time: entry.start_time?.slice(0, 5),
         end_time: entry.end_time?.slice(0, 5),
+        external_ref1: entry.external_ref1 ?? '',
+        external_ref2: entry.external_ref2 ?? '',
       });
     } else {
       setForm(empty());
@@ -215,11 +221,22 @@ export default function EntryModal({ entry, onClose, onSaved, onDeleted, kostens
           <div className="form-row">
             <div className="form-group">
               <label>Kostenstelle</label>
-              <Combobox value={form.kostenstelle || ''} onChange={v => set('kostenstelle', v)} items={kostenstellen} placeholder="Code oder Name..." />
+              <Combobox value={form.kostenstelle || ''} onChange={v => set('kostenstelle', v)} options={masterDataToOptions(kostenstellen)} placeholder="Code oder Name..." />
             </div>
             <div className="form-group">
               <label>Kostenträger</label>
-              <Combobox value={form.kostentraeger || ''} onChange={v => set('kostentraeger', v)} items={kostentraeger} placeholder="Code oder Name..." />
+              <Combobox value={form.kostentraeger || ''} onChange={v => set('kostentraeger', v)} options={masterDataToOptions(kostentraeger)} placeholder="Code oder Name..." />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label>Externe Referenz 1</label>
+              <Combobox value={form.external_ref1 || ''} onChange={v => set('external_ref1', v)} options={extRefToOptions(extRef1Items)} placeholder="Referent oder freier Text..." />
+            </div>
+            <div className="form-group">
+              <label>Externe Referenz 2</label>
+              <Combobox value={form.external_ref2 || ''} onChange={v => set('external_ref2', v)} options={extRefToOptions(extRef2Items)} placeholder="Referent oder freier Text..." />
             </div>
           </div>
 
