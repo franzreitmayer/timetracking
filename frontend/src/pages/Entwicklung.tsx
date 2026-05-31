@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, Sankey,
+  ResponsiveContainer, Sankey, LabelList,
 } from 'recharts';
 import { toPng } from 'html-to-image';
 import api, { TimeEntry, MasterDataItem, ExtRefItem } from '../api/client';
@@ -87,9 +87,10 @@ function SankeyNode({ x = 0, y = 0, width = 0, height = 0, index = 0, payload, p
 // ── Komponente ───────────────────────────────────────────────────────────────
 
 export default function Entwicklung({ dateFrom, dateTo }: Props) {
-  const [chartType,  setChartType]  = useState<ChartType>('bar');
-  const [aggLevel,   setAggLevel]   = useState<AggLevel>('month');
-  const [groupField, setGroupField] = useState<GroupField>('kostenstelle');
+  const [chartType,   setChartType]  = useState<ChartType>('bar');
+  const [aggLevel,    setAggLevel]   = useState<AggLevel>('month');
+  const [groupField,  setGroupField] = useState<GroupField>('kostenstelle');
+  const [showLabels,  setShowLabels] = useState(false);
 
   const [entries,      setEntries]      = useState<TimeEntry[]>([]);
   const [kostenstellen, setKostenstellen] = useState<MasterDataItem[]>([]);
@@ -299,6 +300,15 @@ export default function Entwicklung({ dateFrom, dateTo }: Props) {
           </select>
         </div>
 
+        {/* Stunden-Labels */}
+        <button
+          className={showLabels ? 'btn-primary' : 'btn-secondary'}
+          onClick={() => setShowLabels(s => !s)}
+          title="Stundenwerte im Diagramm ein-/ausblenden"
+        >
+          🔢 Stunden {showLabels ? 'ausblenden' : 'anzeigen'}
+        </button>
+
         {/* Zusammenfassung */}
         <span style={{ marginLeft: 'auto', fontSize: 13, color: 'var(--text-muted)' }}>
           <strong style={{ color: 'var(--text)' }}>{entries.length}</strong> Einträge ·{' '}
@@ -345,7 +355,16 @@ export default function Entwicklung({ dateFrom, dateTo }: Props) {
                       stackId="stack"
                       fill={COLORS[i % COLORS.length]}
                       radius={i === categories.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
-                    />
+                    >
+                      {showLabels && (
+                        <LabelList
+                          dataKey={cat}
+                          position="center"
+                          formatter={(v: number) => v >= 0.5 ? `${v.toFixed(1)}h` : ''}
+                          style={{ fontSize: 10, fill: '#fff', fontWeight: 700 }}
+                        />
+                      )}
+                    </Bar>
                   ))}
                 </BarChart>
               </ResponsiveContainer>
@@ -366,21 +385,40 @@ export default function Entwicklung({ dateFrom, dateTo }: Props) {
                               sourceControlX, targetControlX, linkWidth, payload } = props;
                       const catIdx = (payload?.target ?? 0) - periodsCount;
                       const color  = catIdx >= 0 ? COLORS[catIdx % COLORS.length] : '#94a3b8';
-                      const hw = linkWidth / 2;
+                      const hw     = linkWidth / 2;
+                      const value: number = payload?.value ?? 0;
+                      // Bezier-Mittelpunkt bei t=0.5
+                      const midX = (sourceX + 3 * sourceControlX + 3 * targetControlX + targetX) / 8;
+                      const midY = (sourceY + targetY) / 2;
                       return (
-                        <path
-                          d={`M${sourceX},${sourceY - hw}
-                              C${sourceControlX},${sourceY - hw}
-                               ${targetControlX},${targetY - hw}
-                               ${targetX},${targetY - hw}
-                              L${targetX},${targetY + hw}
-                              C${targetControlX},${targetY + hw}
-                               ${sourceControlX},${sourceY + hw}
-                               ${sourceX},${sourceY + hw}Z`}
-                          fill={color}
-                          fillOpacity={0.35}
-                          stroke="none"
-                        />
+                        <g>
+                          <path
+                            d={`M${sourceX},${sourceY - hw}
+                                C${sourceControlX},${sourceY - hw}
+                                 ${targetControlX},${targetY - hw}
+                                 ${targetX},${targetY - hw}
+                                L${targetX},${targetY + hw}
+                                C${targetControlX},${targetY + hw}
+                                 ${sourceControlX},${sourceY + hw}
+                                 ${sourceX},${sourceY + hw}Z`}
+                            fill={color}
+                            fillOpacity={0.35}
+                            stroke="none"
+                          />
+                          {showLabels && linkWidth >= 14 && (
+                            <text
+                              x={midX}
+                              y={midY}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              fontSize={10}
+                              fontWeight={700}
+                              fill="#1e293b"
+                            >
+                              {value >= 1 ? `${value.toFixed(1)}h` : `${Math.round(value * 60)}min`}
+                            </text>
+                          )}
+                        </g>
                       );
                     }}
                   >
