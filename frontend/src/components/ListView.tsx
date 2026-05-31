@@ -1,11 +1,15 @@
 import * as XLSX from 'xlsx';
-import type { TimeEntry } from '../api/client';
+import type { TimeEntry, MasterDataItem, ExtRefItem } from '../api/client';
 
 interface Props {
   entries: TimeEntry[];
   onEdit: (e: TimeEntry) => void;
   dateFrom?: string;
   dateTo?: string;
+  kostenstellen?: MasterDataItem[];
+  kostentraeger?: MasterDataItem[];
+  extRef1Items?: ExtRefItem[];
+  extRef2Items?: ExtRefItem[];
 }
 
 function durationMins(start: string, end: string): number {
@@ -34,27 +38,47 @@ function fmtDate(d: string) {
 
 // ── Excel Export ────────────────────────────────────────────────────────────
 
-function exportExcel(entries: TimeEntry[], dateFrom?: string, dateTo?: string) {
+/** Gibt "CODE – Bezeichnung" zurück, oder nur "CODE" wenn kein Text gefunden. */
+function resolveKst(code: string | null, items: MasterDataItem[]): string {
+  if (!code) return '';
+  const found = items.find(i => i.code === code);
+  return found ? `${code} – ${found.label}` : code;
+}
+
+function resolveRef(referent: string | null, items: ExtRefItem[]): string {
+  if (!referent) return '';
+  const found = items.find(i => i.referent === referent);
+  return found?.beschreibung ? `${referent} – ${found.beschreibung}` : referent;
+}
+
+function exportExcel(
+  entries: TimeEntry[],
+  dateFrom?: string,
+  dateTo?: string,
+  kostenstellen: MasterDataItem[] = [],
+  kostentraeger: MasterDataItem[] = [],
+  extRef1Items: ExtRefItem[] = [],
+  extRef2Items: ExtRefItem[] = [],
+) {
   const sorted = [...entries].sort((a, b) =>
     a.entry_date.localeCompare(b.entry_date) || a.start_time.localeCompare(b.start_time)
   );
 
-  // Datenzeilen
   const rows = sorted.map(e => {
     const mins = durationMins(e.start_time.slice(0, 5), e.end_time.slice(0, 5));
     return {
-      'Datum':         new Date(e.entry_date.slice(0, 10) + 'T00:00:00').toLocaleDateString('de-DE'),
-      'Von':           e.start_time.slice(0, 5),
-      'Bis':           e.end_time.slice(0, 5),
-      'Dauer (h)':     parseFloat((mins / 60).toFixed(2)),
-      'Kurztext':      e.short_text,
-      'Langtext':      e.long_text ?? '',
-      'Kostenstelle':  e.kostenstelle ?? '',
-      'Kostenträger':  e.kostentraeger ?? '',
-      'Ext. Ref. 1':   e.external_ref1 ?? '',
-      'Ext. Ref. 2':   e.external_ref2 ?? '',
-      'Fahrzeit':      e.is_travel    ? 'Ja' : 'Nein',
-      'Verrechenbar':  e.is_billable  ? 'Ja' : 'Nein',
+      'Datum':              new Date(e.entry_date.slice(0, 10) + 'T00:00:00').toLocaleDateString('de-DE'),
+      'Von':                e.start_time.slice(0, 5),
+      'Bis':                e.end_time.slice(0, 5),
+      'Dauer (h)':          parseFloat((mins / 60).toFixed(2)),
+      'Kurztext':           e.short_text,
+      'Langtext':           e.long_text ?? '',
+      'Kostenstelle':       resolveKst(e.kostenstelle, kostenstellen),
+      'Kostenträger':       resolveKst(e.kostentraeger, kostentraeger),
+      'Ext. Ref. 1':        resolveRef(e.external_ref1, extRef1Items),
+      'Ext. Ref. 2':        resolveRef(e.external_ref2, extRef2Items),
+      'Fahrzeit':           e.is_travel   ? 'Ja' : 'Nein',
+      'Verrechenbar':       e.is_billable ? 'Ja' : 'Nein',
     };
   });
 
@@ -79,7 +103,6 @@ function exportExcel(entries: TimeEntry[], dateFrom?: string, dateTo?: string) {
 
   const ws = XLSX.utils.json_to_sheet(rows);
 
-  // Spaltenbreiten
   ws['!cols'] = [
     { wch: 14 }, // Datum
     { wch: 6  }, // Von
@@ -87,10 +110,10 @@ function exportExcel(entries: TimeEntry[], dateFrom?: string, dateTo?: string) {
     { wch: 10 }, // Dauer
     { wch: 32 }, // Kurztext
     { wch: 44 }, // Langtext
-    { wch: 14 }, // Kostenstelle
-    { wch: 14 }, // Kostenträger
-    { wch: 16 }, // Ext. Ref. 1
-    { wch: 16 }, // Ext. Ref. 2
+    { wch: 28 }, // Kostenstelle (Code + Text)
+    { wch: 28 }, // Kostenträger (Code + Text)
+    { wch: 32 }, // Ext. Ref. 1  (Referent + Beschreibung)
+    { wch: 32 }, // Ext. Ref. 2
     { wch: 10 }, // Fahrzeit
     { wch: 12 }, // Verrechenbar
   ];
