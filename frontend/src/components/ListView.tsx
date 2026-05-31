@@ -38,17 +38,14 @@ function fmtDate(d: string) {
 
 // ── Excel Export ────────────────────────────────────────────────────────────
 
-/** Gibt "CODE – Bezeichnung" zurück, oder nur "CODE" wenn kein Text gefunden. */
-function resolveKst(code: string | null, items: MasterDataItem[]): string {
+function resolveKstLabel(code: string | null, items: MasterDataItem[]): string {
   if (!code) return '';
-  const found = items.find(i => i.code === code);
-  return found ? `${code} – ${found.label}` : code;
+  return items.find(i => i.code === code)?.label ?? '';
 }
 
-function resolveRef(referent: string | null, items: ExtRefItem[]): string {
+function resolveRefLabel(referent: string | null, items: ExtRefItem[]): string {
   if (!referent) return '';
-  const found = items.find(i => i.referent === referent);
-  return found?.beschreibung ? `${referent} – ${found.beschreibung}` : referent;
+  return items.find(i => i.referent === referent)?.beschreibung ?? '';
 }
 
 function exportExcel(
@@ -67,18 +64,22 @@ function exportExcel(
   const rows = sorted.map(e => {
     const mins = durationMins(e.start_time.slice(0, 5), e.end_time.slice(0, 5));
     return {
-      'Datum':              new Date(e.entry_date.slice(0, 10) + 'T00:00:00').toLocaleDateString('de-DE'),
-      'Von':                e.start_time.slice(0, 5),
-      'Bis':                e.end_time.slice(0, 5),
-      'Dauer (h)':          parseFloat((mins / 60).toFixed(2)),
-      'Kurztext':           e.short_text,
-      'Langtext':           e.long_text ?? '',
-      'Kostenstelle':       resolveKst(e.kostenstelle, kostenstellen),
-      'Kostenträger':       resolveKst(e.kostentraeger, kostentraeger),
-      'Ext. Ref. 1':        resolveRef(e.external_ref1, extRef1Items),
-      'Ext. Ref. 2':        resolveRef(e.external_ref2, extRef2Items),
-      'Fahrzeit':           e.is_travel   ? 'Ja' : 'Nein',
-      'Verrechenbar':       e.is_billable ? 'Ja' : 'Nein',
+      'Datum':                    new Date(e.entry_date.slice(0, 10) + 'T00:00:00').toLocaleDateString('de-DE'),
+      'Von':                      e.start_time.slice(0, 5),
+      'Bis':                      e.end_time.slice(0, 5),
+      'Dauer (h)':                parseFloat((mins / 60).toFixed(2)),
+      'Kurztext':                 e.short_text,
+      'Langtext':                 e.long_text ?? '',
+      'Kostenstelle':             e.kostenstelle ?? '',
+      'Kostenstelle Text':        resolveKstLabel(e.kostenstelle, kostenstellen),
+      'Kostenträger':             e.kostentraeger ?? '',
+      'Kostenträger Text':        resolveKstLabel(e.kostentraeger, kostentraeger),
+      'Ext. Ref. 1':              e.external_ref1 ?? '',
+      'Ext. Ref. 1 Text':         resolveRefLabel(e.external_ref1, extRef1Items),
+      'Ext. Ref. 2':              e.external_ref2 ?? '',
+      'Ext. Ref. 2 Text':         resolveRefLabel(e.external_ref2, extRef2Items),
+      'Fahrzeit':                 e.is_travel   ? 'Ja' : 'Nein',
+      'Verrechenbar':             e.is_billable ? 'Ja' : 'Nein',
     };
   });
 
@@ -87,18 +88,22 @@ function exportExcel(
   const billableMins = sorted.filter(e => e.is_billable).reduce((s, e) => s + durationMins(e.start_time.slice(0, 5), e.end_time.slice(0, 5)), 0);
 
   rows.push({
-    'Datum':        'GESAMT',
-    'Von':          '',
-    'Bis':          '',
-    'Dauer (h)':    parseFloat((totalMins / 60).toFixed(2)),
-    'Kurztext':     `${sorted.length} Einträge`,
-    'Langtext':     '',
-    'Kostenstelle': '',
-    'Kostenträger': '',
-    'Ext. Ref. 1':  '',
-    'Ext. Ref. 2':  '',
-    'Fahrzeit':     '',
-    'Verrechenbar': `${parseFloat((billableMins / 60).toFixed(2))} h`,
+    'Datum':               'GESAMT',
+    'Von':                 '',
+    'Bis':                 '',
+    'Dauer (h)':           parseFloat((totalMins / 60).toFixed(2)),
+    'Kurztext':            `${sorted.length} Einträge`,
+    'Langtext':            '',
+    'Kostenstelle':        '',
+    'Kostenstelle Text':   '',
+    'Kostenträger':        '',
+    'Kostenträger Text':   '',
+    'Ext. Ref. 1':         '',
+    'Ext. Ref. 1 Text':    '',
+    'Ext. Ref. 2':         '',
+    'Ext. Ref. 2 Text':    '',
+    'Fahrzeit':            '',
+    'Verrechenbar':        `${parseFloat((billableMins / 60).toFixed(2))} h`,
   });
 
   const ws = XLSX.utils.json_to_sheet(rows);
@@ -107,13 +112,17 @@ function exportExcel(
     { wch: 14 }, // Datum
     { wch: 6  }, // Von
     { wch: 6  }, // Bis
-    { wch: 10 }, // Dauer
+    { wch: 10 }, // Dauer (h)
     { wch: 32 }, // Kurztext
     { wch: 44 }, // Langtext
-    { wch: 28 }, // Kostenstelle (Code + Text)
-    { wch: 28 }, // Kostenträger (Code + Text)
-    { wch: 32 }, // Ext. Ref. 1  (Referent + Beschreibung)
-    { wch: 32 }, // Ext. Ref. 2
+    { wch: 14 }, // Kostenstelle
+    { wch: 28 }, // Kostenstelle Text
+    { wch: 14 }, // Kostenträger
+    { wch: 28 }, // Kostenträger Text
+    { wch: 16 }, // Ext. Ref. 1
+    { wch: 28 }, // Ext. Ref. 1 Text
+    { wch: 16 }, // Ext. Ref. 2
+    { wch: 28 }, // Ext. Ref. 2 Text
     { wch: 10 }, // Fahrzeit
     { wch: 12 }, // Verrechenbar
   ];
