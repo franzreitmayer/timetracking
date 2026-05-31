@@ -18,6 +18,9 @@ export default function Nav() {
         <button className={`nav-link${loc.pathname === '/' ? ' active' : ''}`} onClick={() => nav('/')}>
           Zeiten
         </button>
+        <button className={`nav-link${loc.pathname === '/entwicklung' ? ' active' : ''}`} onClick={() => nav('/entwicklung')}>
+          Entwicklung
+        </button>
         {user.is_admin && (
           <button className={`nav-link${loc.pathname === '/admin' ? ' active' : ''}`} onClick={() => nav('/admin')}>
             Administration

@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Entwicklung from './pages/Entwicklung';
 import Admin from './pages/Admin';
 import Nav from './components/Nav';
 
@@ -16,6 +18,14 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const now = new Date();
+  const [dateFrom, setDateFrom] = useState(() =>
+    new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('sv')
+  );
+  const [dateTo, setDateTo] = useState(() =>
+    new Date(now.getFullYear(), now.getMonth() + 1, 0).toLocaleDateString('sv')
+  );
+
   return (
     <BrowserRouter>
       <Routes>
@@ -24,7 +34,17 @@ export default function App() {
           <PrivateRoute>
             <Nav />
             <Routes>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={
+                <Dashboard
+                  dateFrom={dateFrom}
+                  dateTo={dateTo}
+                  onDateFromChange={setDateFrom}
+                  onDateToChange={setDateTo}
+                />
+              } />
+              <Route path="/entwicklung" element={
+                <Entwicklung dateFrom={dateFrom} dateTo={dateTo} />
+              } />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             </Routes>
           </PrivateRoute>

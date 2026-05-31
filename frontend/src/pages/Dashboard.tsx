@@ -6,7 +6,14 @@ import EntryModal from '../components/EntryModal';
 
 type Tab = 'calendar' | 'list';
 
-export default function Dashboard() {
+interface Props {
+  dateFrom: string;
+  dateTo: string;
+  onDateFromChange: (v: string) => void;
+  onDateToChange: (v: string) => void;
+}
+
+export default function Dashboard({ dateFrom, dateTo, onDateFromChange, onDateToChange }: Props) {
   const [tab, setTab] = useState<Tab>('calendar');
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [kostenstellen, setKostenstellen] = useState<MasterDataItem[]>([]);
@@ -15,14 +22,6 @@ export default function Dashboard() {
   const [extRef2Items, setExtRef2Items] = useState<ExtRefItem[]>([]);
   const [modal, setModal] = useState<Partial<TimeEntry> | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-
-  const now = new Date();
-  const [dateFrom, setDateFrom] = useState(() =>
-    new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('sv')
-  );
-  const [dateTo, setDateTo] = useState(() =>
-    new Date(now.getFullYear(), now.getMonth() + 1, 0).toLocaleDateString('sv')
-  );
 
   const loadEntries = useCallback(async () => {
     const { data } = await api.get<TimeEntry[]>(`/entries?date_from=${dateFrom}&date_to=${dateTo}`);
@@ -66,9 +65,9 @@ export default function Dashboard() {
 
       <div className="card" style={{ padding: '14px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
         <label style={{ fontWeight: 600, fontSize: 13 }}>Zeitraum:</label>
-        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ width: 160 }} />
+        <input type="date" value={dateFrom} onChange={e => onDateFromChange(e.target.value)} style={{ width: 160 }} />
         <span style={{ color: 'var(--text-muted)' }}>bis</span>
-        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ width: 160 }} />
+        <input type="date" value={dateTo} onChange={e => onDateToChange(e.target.value)} style={{ width: 160 }} />
       </div>
 
       <div className="tabs">
