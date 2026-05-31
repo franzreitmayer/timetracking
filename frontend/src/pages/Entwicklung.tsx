@@ -357,9 +357,32 @@ export default function Entwicklung({ dateFrom, dateTo }: Props) {
                     height={sankeyHeight}
                     data={sankeyData}
                     nodePadding={14}
-                    margin={{ top: 16, bottom: 16, left: 10, right: 220 }}
-                    link={{ stroke: '#94a3b8', strokeOpacity: 0.45 }}
-                    node={<SankeyNode periodsCount={periodsCount} />}
+                    margin={{ top: 16, bottom: 16, left: 130, right: 230 }}
+                    node={(props: any) => (
+                      <SankeyNode {...props} periodsCount={periodsCount} />
+                    )}
+                    link={(props: any) => {
+                      const { sourceX, sourceY, targetX, targetY,
+                              sourceControlX, targetControlX, linkWidth, payload } = props;
+                      const catIdx = (payload?.target ?? 0) - periodsCount;
+                      const color  = catIdx >= 0 ? COLORS[catIdx % COLORS.length] : '#94a3b8';
+                      const hw = linkWidth / 2;
+                      return (
+                        <path
+                          d={`M${sourceX},${sourceY - hw}
+                              C${sourceControlX},${sourceY - hw}
+                               ${targetControlX},${targetY - hw}
+                               ${targetX},${targetY - hw}
+                              L${targetX},${targetY + hw}
+                              C${targetControlX},${targetY + hw}
+                               ${sourceControlX},${sourceY + hw}
+                               ${sourceX},${sourceY + hw}Z`}
+                          fill={color}
+                          fillOpacity={0.35}
+                          stroke="none"
+                        />
+                      );
+                    }}
                   >
                     <Tooltip
                       formatter={(v: number) => [`${Number(v).toFixed(2)} h`, 'Stunden']}
@@ -371,14 +394,14 @@ export default function Entwicklung({ dateFrom, dateTo }: Props) {
                 {/* Legende */}
                 {categories.length > 0 && (
                   <div style={{
-                    borderTop: '1px solid #e2e8f0', marginTop: 12, paddingTop: 14,
-                    display: 'flex', flexWrap: 'wrap', gap: '8px 20px', fontSize: 12, color: '#374151',
+                    borderTop: '1px solid #e2e8f0', marginTop: 16, paddingTop: 14,
+                    display: 'flex', flexWrap: 'wrap', gap: '10px 24px', fontSize: 12, color: '#374151',
                   }}>
-                    <span style={{ fontWeight: 600, color: '#64748b', width: '100%', marginBottom: 2 }}>
+                    <span style={{ fontWeight: 700, fontSize: 13, color: '#374151', width: '100%', marginBottom: 4 }}>
                       {fieldLabels[groupField]}
                     </span>
                     {categories.map((cat, i) => (
-                      <span key={cat} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span key={cat} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                         <span style={{
                           display: 'inline-block', width: 14, height: 14, borderRadius: 3, flexShrink: 0,
                           background: COLORS[i % COLORS.length],
