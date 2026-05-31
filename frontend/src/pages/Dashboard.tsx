@@ -84,7 +84,7 @@ export default function Dashboard() {
           onEntryUpdated={e => setEntries(prev => prev.map(x => x.id === e.id ? e : x))}
         />
       ) : (
-        <ListView entries={entries} onEdit={e => { setModal(e); setModalOpen(true); }} />
+        <ListView entries={entries} onEdit={e => { setModal(e); setModalOpen(true); }} dateFrom={dateFrom} dateTo={dateTo} />
       )}
 
       {modalOpen && (
