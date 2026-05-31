@@ -233,22 +233,7 @@ export default function Entwicklung({ dateFrom, dateTo }: Props) {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1 className="page-title">Entwicklung</h1>
-        <button className="btn-secondary" onClick={handleExport} title="Diagramm als PNG exportieren">
-          ⬇ PNG Export
-        </button>
-      </div>
-
-      {/* Zeitraum-Info */}
-      <div style={{ marginBottom: 12, fontSize: 13, color: 'var(--text-muted)' }}>
-        Zeitraum: <strong style={{ color: 'var(--text)' }}>{dateFrom}</strong>
-        {' '}bis{' '}
-        <strong style={{ color: 'var(--text)' }}>{dateTo}</strong>
-        {' '}— Zeitraum wird in der Ansicht „Zeiten" eingestellt.
-      </div>
-
+    <div>
       {/* Steuerung */}
       <div className="card" style={{ padding: '14px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
         {/* Diagrammtyp */}
@@ -307,6 +292,11 @@ export default function Entwicklung({ dateFrom, dateTo }: Props) {
           title="Stundenwerte im Diagramm ein-/ausblenden"
         >
           🔢 Stunden {showLabels ? 'ausblenden' : 'anzeigen'}
+        </button>
+
+        {/* Export */}
+        <button className="btn-secondary" onClick={handleExport} title="Diagramm als PNG exportieren">
+          ⬇ PNG
         </button>
 
         {/* Zusammenfassung */}

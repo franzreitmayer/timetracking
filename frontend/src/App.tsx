@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Entwicklung from './pages/Entwicklung';
 import Admin from './pages/Admin';
 import Nav from './components/Nav';
 
@@ -41,9 +40,6 @@ export default function App() {
                   onDateFromChange={setDateFrom}
                   onDateToChange={setDateTo}
                 />
-              } />
-              <Route path="/entwicklung" element={
-                <Entwicklung dateFrom={dateFrom} dateTo={dateTo} />
               } />
               <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             </Routes>

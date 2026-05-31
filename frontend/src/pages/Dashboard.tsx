@@ -3,8 +3,9 @@ import api, { TimeEntry, MasterDataItem, ExtRefItem } from '../api/client';
 import CalendarView from '../components/CalendarView';
 import ListView from '../components/ListView';
 import EntryModal from '../components/EntryModal';
+import Entwicklung from './Entwicklung';
 
-type Tab = 'calendar' | 'list';
+type Tab = 'calendar' | 'list' | 'entwicklung';
 
 interface Props {
   dateFrom: string;
@@ -73,16 +74,18 @@ export default function Dashboard({ dateFrom, dateTo, onDateFromChange, onDateTo
       <div className="tabs">
         <button className={`tab${tab === 'calendar' ? ' active' : ''}`} onClick={() => setTab('calendar')}>Kalenderansicht</button>
         <button className={`tab${tab === 'list' ? ' active' : ''}`} onClick={() => setTab('list')}>Listenansicht</button>
+        <button className={`tab${tab === 'entwicklung' ? ' active' : ''}`} onClick={() => setTab('entwicklung')}>Entwicklung</button>
       </div>
 
-      {tab === 'calendar' ? (
+      {tab === 'calendar' && (
         <CalendarView
           entries={entries}
           onSelectSlot={(date, start, end) => openNew({ entry_date: date, start_time: start, end_time: end })}
           onEditEntry={e => { setModal(e); setModalOpen(true); }}
           onEntryUpdated={e => setEntries(prev => prev.map(x => x.id === e.id ? e : x))}
         />
-      ) : (
+      )}
+      {tab === 'list' && (
         <ListView
           entries={entries}
           onEdit={e => { setModal(e); setModalOpen(true); }}
@@ -93,6 +96,9 @@ export default function Dashboard({ dateFrom, dateTo, onDateFromChange, onDateTo
           extRef1Items={extRef1Items}
           extRef2Items={extRef2Items}
         />
+      )}
+      {tab === 'entwicklung' && (
+        <Entwicklung dateFrom={dateFrom} dateTo={dateTo} />
       )}
 
       {modalOpen && (
