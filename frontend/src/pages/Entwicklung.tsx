@@ -52,6 +52,38 @@ function durationH(start: string, end: string): number {
   return Math.max(0, (eh * 60 + em) - (sh * 60 + sm)) / 60;
 }
 
+// ── Sankey-Node-Renderer ─────────────────────────────────────────────────────
+// Recharts klont dieses Element und injiziert x, y, width, height, index, payload.
+// periodsCount unterscheidet Quell- (Zeitperiode) von Ziel-Knoten (Kategorie).
+
+interface SankeyNodeProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  index?: number;
+  payload?: { name: string };
+  periodsCount: number;
+}
+
+function SankeyNode({ x = 0, y = 0, width = 0, height = 0, index = 0, payload, periodsCount }: SankeyNodeProps) {
+  const isSource = index < periodsCount;
+  const fill     = isSource ? '#94a3b8' : COLORS[(index - periodsCount) % COLORS.length];
+  const labelX   = isSource ? x - 6 : x + width + 6;
+  const anchor   = isSource ? 'end' : 'start';
+  const name     = payload?.name ?? '';
+  const label    = name.length > 32 ? name.slice(0, 31) + '…' : name;
+
+  return (
+    <g>
+      <rect x={x} y={y} width={width} height={height} fill={fill} stroke="#fff" strokeWidth={1} />
+      <text x={labelX} y={y + height / 2} textAnchor={anchor} dominantBaseline="middle" fontSize={11} fill="#374151">
+        {label}
+      </text>
+    </g>
+  );
+}
+
 // ── Komponente ───────────────────────────────────────────────────────────────
 
 export default function Entwicklung({ dateFrom, dateTo }: Props) {
@@ -95,7 +127,7 @@ export default function Entwicklung({ dateFrom, dateTo }: Props) {
 
   // ── Aggregation ─────────────────────────────────────────────────────────────
 
-  const { categories, barData, sankeyData, totalHours } = useMemo(() => {
+  const { categories, barData, sankeyData, totalHours, periodsCount } = useMemo(() => {
     function resolveLabel(value: string | null): string {
       if (!value) return '(keine)';
       switch (groupField) {
@@ -167,7 +199,7 @@ export default function Entwicklung({ dateFrom, dateTo }: Props) {
       (s, pm) => s + Array.from(pm.values()).reduce((a, b) => a + b, 0), 0,
     );
 
-    return { categories, barData, sankeyData: { nodes, links }, totalHours };
+    return { categories, barData, sankeyData: { nodes, links }, totalHours, periodsCount: periods.length };
   }, [entries, aggLevel, groupField, kostenstellen, kostentraeger, extRef1Items, extRef2Items]);
 
   // ── Export ──────────────────────────────────────────────────────────────────
@@ -318,21 +350,45 @@ export default function Entwicklung({ dateFrom, dateTo }: Props) {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <Sankey
-                  width={Math.max(680, chartWidth)}
-                  height={sankeyHeight}
-                  data={sankeyData}
-                  nodePadding={14}
-                  margin={{ top: 16, bottom: 16, left: 10, right: 220 }}
-                  link={{ stroke: '#94a3b8', strokeOpacity: 0.45 }}
-                >
-                  <Tooltip
-                    formatter={(v: number) => [`${Number(v).toFixed(2)} h`, 'Stunden']}
-                    contentStyle={{ fontSize: 13 }}
-                  />
-                </Sankey>
-              </div>
+              <>
+                <div style={{ overflowX: 'auto' }}>
+                  <Sankey
+                    width={Math.max(680, chartWidth)}
+                    height={sankeyHeight}
+                    data={sankeyData}
+                    nodePadding={14}
+                    margin={{ top: 16, bottom: 16, left: 10, right: 220 }}
+                    link={{ stroke: '#94a3b8', strokeOpacity: 0.45 }}
+                    node={<SankeyNode periodsCount={periodsCount} />}
+                  >
+                    <Tooltip
+                      formatter={(v: number) => [`${Number(v).toFixed(2)} h`, 'Stunden']}
+                      contentStyle={{ fontSize: 13 }}
+                    />
+                  </Sankey>
+                </div>
+
+                {/* Legende */}
+                {categories.length > 0 && (
+                  <div style={{
+                    borderTop: '1px solid #e2e8f0', marginTop: 12, paddingTop: 14,
+                    display: 'flex', flexWrap: 'wrap', gap: '8px 20px', fontSize: 12, color: '#374151',
+                  }}>
+                    <span style={{ fontWeight: 600, color: '#64748b', width: '100%', marginBottom: 2 }}>
+                      {fieldLabels[groupField]}
+                    </span>
+                    {categories.map((cat, i) => (
+                      <span key={cat} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{
+                          display: 'inline-block', width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                          background: COLORS[i % COLORS.length],
+                        }} />
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
